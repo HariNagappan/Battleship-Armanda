@@ -147,6 +147,7 @@ class GameViewModel: ViewModel() {
         player.iswinner.value=false
         player.cur_score=0
         player.mode.value=Mode.DEPLOYING
+        player.health.value=1f
         ClearGrid(player=player)
     }
     fun ResetShipsToPreviousPosition(player: Player){

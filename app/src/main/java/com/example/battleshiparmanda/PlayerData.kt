@@ -24,6 +24,8 @@ data class Player(
     var iswinner: MutableState<Boolean> = mutableStateOf(false),
     var high_score:Int=0,
     var reset_ships_to_prev: MutableState<Int> =mutableStateOf(0),
+    var health: MutableState<Float> =mutableStateOf(1f)
+
 )
 data class Ship(val shipType: ShipType,
                 var isvisible:Boolean=true,
@@ -37,5 +39,5 @@ data class Ship(val shipType: ShipType,
                 var grid_positions:MutableList<IntOffset> = mutableListOf(),
                 var org_pos_in_screen: Offset= Offset.Zero,
                 var org_relative_grid_pos: Offset= Offset.Zero,
-                var tmp_ship_grid_start_idx: IntOffset= IntOffset.Zero
+                var tmp_ship_grid_start_idx: IntOffset= IntOffset.Zero,
                 )

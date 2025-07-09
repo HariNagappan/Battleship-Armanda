@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -34,6 +35,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 @Composable
@@ -110,6 +113,7 @@ fun Fortify(gameViewModel: GameViewModel, heading:String,description:String,onFa
                         onClick = {
                             //TODO Do Auto Feature
                             val res=GetRandomGridPositions(for_player = gameViewModel.cur_player)
+
                             Log.d("general","map of all:$res")
                         },
                         shape = RoundedCornerShape(16.dp),
@@ -170,4 +174,7 @@ fun Fortify(gameViewModel: GameViewModel, heading:String,description:String,onFa
             Spacer(modifier= Modifier.height(10.dp))
         }
     }
+}
+fun IntOffset.toFloat(): Offset{
+    return Offset(this.x.toFloat(),this.y.toFloat())
 }

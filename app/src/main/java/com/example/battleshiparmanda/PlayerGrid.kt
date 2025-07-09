@@ -60,6 +60,8 @@ fun DrawGrid(gameViewModel: GameViewModel, for_player:Player,modifier:Modifier=M
                                     val cur_cell = IntOffset(row, col)
                                     if (for_player.grid[row][col].cellState.value == CellState.SHIP) {
                                         //attack hit
+
+                                        for_player.health.value-= 1/7f
                                         for_player.grid[row][col].cellState.value = CellState.HIT
                                         for_player.ships.find { cur_cell in it.grid_positions }?.let { ship ->
                                                 ship.attacked_count.value +=1

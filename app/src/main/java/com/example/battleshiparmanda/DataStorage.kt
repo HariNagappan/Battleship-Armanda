@@ -1,5 +1,6 @@
 package com.example.battleshiparmanda
 
+import android.R.attr.data
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,4 +47,5 @@ val MISS_SCORE=-10
 val GRID_PADDING=8.dp
 val CELL_SIZE=52.dp
 val GRID_SIZE=5
+val TOTAL_SHIP_COUNT=7
 data class GameHistoryData(var winner:Players, var winner_player_score:Int, var winner_player_high_score:Int, val loser: Players, var loser_player_score:Int, var loser_player_high_score:Int)

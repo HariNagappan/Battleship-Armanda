@@ -11,13 +11,13 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 
-fun GetRandomGridPositions(for_player: Player):Map<ShipType,List<IntOffset>>{
+fun GetRandomGridPositions(for_player: Player):Map<ShipType,Pair<List<IntOffset>, Orientation>>{
     val all_grid_pos=mutableListOf<IntOffset>()
-    val final=mapOf(
-        ShipType.Ship1 to mutableListOf<IntOffset>(),
-        ShipType.Ship2 to mutableListOf<IntOffset>(),
-        ShipType.Ship3 to mutableListOf<IntOffset>(),
-        ShipType.Ship3_1 to mutableListOf<IntOffset>(),
+    val final=mutableMapOf(
+        ShipType.Ship1 to Pair(mutableListOf<IntOffset>(), Orientation.HORIZONTAL),
+        ShipType.Ship2 to Pair(mutableListOf<IntOffset>(), Orientation.HORIZONTAL),
+        ShipType.Ship3 to Pair(mutableListOf<IntOffset>(), Orientation.HORIZONTAL),
+        ShipType.Ship3_1 to Pair(mutableListOf<IntOffset>(), Orientation.HORIZONTAL),
         )
     for(shiptype in final.keys){
         var random_start_idx= GetRandomStartIndex(for_player=for_player, exclude = all_grid_pos)
@@ -36,11 +36,14 @@ fun GetRandomGridPositions(for_player: Player):Map<ShipType,List<IntOffset>>{
                 ship_orientation = random_orientation)
         }
         all_grid_pos.addAll(lst)
-        final.getValue(shiptype).addAll(lst)
+        final[shiptype]=(Pair(lst,random_orientation))
     }
     return final
 }
 fun IsInBoundary(start_idx: IntOffset,orientation: Orientation,for_player: Player,ship_size: Int): Boolean{
+    if(start_idx.x<0 || start_idx.y<0 || start_idx.x>=for_player.grid.size || start_idx.y>=for_player.grid.size){
+        return false
+    }
     if(orientation== Orientation.HORIZONTAL){
         for(i in 0 until ship_size){
             if(start_idx.y+i>=for_player.grid.size ){

@@ -1,12 +1,15 @@
 package com.example.battleshiparmanda
 
+import android.R.attr.bottom
 import android.R.attr.mode
 import android.R.attr.orientation
+import android.R.attr.right
 import android.R.attr.text
 import android.R.attr.translationX
 import android.R.attr.translationY
 import android.R.attr.visible
 import android.content.Context
+import android.graphics.Paint
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -26,6 +29,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,6 +40,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -50,10 +55,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -61,8 +68,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -77,17 +87,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.times
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -96,6 +113,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.fontResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -131,6 +149,7 @@ import kotlin.math.roundToInt
 @Composable
 fun MainGame(gameViewModel: GameViewModel, navController:NavController){
     var should_show_win_dialog by remember { mutableStateOf(false) }
+    val localdensity =LocalDensity.current
     Box(modifier = Modifier.fillMaxSize()){
         MakeUI(gameViewModel=gameViewModel,
             navController=navController)
@@ -151,6 +170,41 @@ fun MainGame(gameViewModel: GameViewModel, navController:NavController){
                 modifier=Modifier)
         }
     }
+    Canvas(modifier=Modifier.fillMaxSize()) {
+        drawArc(
+            color = Color.DarkGray,
+            startAngle = -90f,
+            sweepAngle = 180f,
+            useCenter = false,
+            topLeft = Offset(-150f, size.height/2f-150f),
+            size = Size(300f, 300f),
+            style = Stroke(width = 20f)
+        )
+        drawArc(
+            color = Color.LightGray,
+            startAngle = -90f,
+            sweepAngle = 180f,
+            useCenter = true,
+            topLeft = Offset(-140f, size.height/2f-140f),
+            size = Size(280f, 280f),
+        )
+        clipRect(
+            left = 0f,
+            top =  size.height/2f-140f+(1-gameViewModel.opp_player.health.value)*280,
+            right = 140f,
+            bottom =size.height/2f+140f
+        ) {
+            drawArc(
+                color = if(gameViewModel.opp_player.health.value>0.5f) Color.Green else Color.Red,
+                startAngle = -90f,
+                sweepAngle = 180f,
+                useCenter = true,
+                topLeft = Offset(-140f, size.height/2f-140f),
+                size = Size(280f,280f)
+            )
+        }
+
+    }
 }
 
 @Composable
@@ -164,9 +218,9 @@ fun MakeUI(gameViewModel: GameViewModel,navController: NavController){
         targetValue = if (gameViewModel.player2.iscurrentplayer) colorResource(R.color.turqoise) else colorResource(R.color.little_black),
         animationSpec = tween(durationMillis = 1000)
     )
-    val yoffset by animateDpAsState(targetValue=if(gameViewModel.player1.mode.value== Mode.FORTIFYING) -140.dp else 140.dp, animationSpec = tween(durationMillis = 500,easing= LinearEasing))
+    val yoffset by animateDpAsState(targetValue=if(gameViewModel.player1.iscurrentplayer) -145.dp else 145.dp, animationSpec = tween(durationMillis = 500,easing= LinearEasing))
     var should_show_error_dialog by remember { mutableStateOf(false) }
-    
+
     Box(
         modifier=Modifier.fillMaxSize()
     ){
@@ -202,17 +256,29 @@ fun MakeUI(gameViewModel: GameViewModel,navController: NavController){
                 )
             }
         }
-        if(gameViewModel.cur_player.mode.value== Mode.FORTIFYING || gameViewModel.cur_player.mode.value== Mode.DEPLOYING)
-        {
-            Box(modifier=Modifier
+        Box(
+            modifier = Modifier
                 .align(Alignment.Center)
-                .fillMaxWidth()
-                .offset(y=if(gameViewModel.player1.iscurrentplayer) -145.dp else 145.dp)) {
+                .offset(
+                    x = 0.dp,
+                    y = yoffset
+                )
+        ) {
+            AnimatedVisibility(
+                visible = (gameViewModel.cur_player.mode.value == Mode.FORTIFYING || gameViewModel.cur_player.mode.value == Mode.DEPLOYING),
+                enter = slideInVertically(animationSpec = tween(durationMillis = 1000)){fullHeight -> fullHeight } + fadeIn(animationSpec = tween(durationMillis = 1000)) ,
+                exit = slideOutVertically(animationSpec = tween(durationMillis = 1000)){fullHeight -> fullHeight } + fadeOut(animationSpec = tween(durationMillis = 1000)) ,
+                modifier = Modifier
+                    .align(Alignment.Center)
+            ) {
                 Fortify(
                     gameViewModel = gameViewModel,
                     heading = if (gameViewModel.cur_player.mode.value == Mode.DEPLOYING) "DEPLOY" else "FORTIFY",
-                    description = if (gameViewModel.cur_player.mode.value == Mode.DEPLOYING) "Click and Place Ships for \nthe best strategy" else "Drag and move \nundamaged ships to safety",
-                    onFailure = {should_show_error_dialog=true}
+                    description = if (gameViewModel.cur_player.mode.value == Mode.DEPLOYING)
+                        "Click and Place Ships for \nthe best strategy"
+                    else
+                        "Drag and move \nundamaged ships to safety",
+                    onFailure = { should_show_error_dialog = true }
                 )
             }
         }
@@ -301,159 +367,6 @@ fun PlayerArea(gameViewModel: GameViewModel, for_player: Player, torotate:Boolea
         }
     }
 }
-@Composable
-fun ShipDock(for_player: Player,gameViewModel: GameViewModel,modifier:Modifier=Modifier){
-        //Row(modifier=Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-        Box(modifier=Modifier.fillMaxWidth()){
-            for_player.ships.forEach { ship ->
-                MovableShip(
-                    ship = ship,
-                    gameViewModel=gameViewModel,
-                    for_player = for_player,
-                    cell_size = CELL_SIZE,
-                    padding = 8.dp,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-        }
-}
-
-@Composable
-fun MovableShip(ship:Ship,for_player: Player,gameViewModel: GameViewModel,cell_size:Dp,padding: Dp,modifier:Modifier=Modifier){
-    val shipLength = ship.shipType.size
-    val orgsizex = cell_size * shipLength + padding * (shipLength - 1)
-    val opp_player=gameViewModel.GetOppositePlayer(cur_player = for_player)
-    val orgsizey= cell_size
-    var should_gray_out=(ship.grid_positions.isEmpty() && for_player.mode.value!= Mode.DEPLOYING && opp_player.mode.value!=Mode.DEPLOYING)
-    val matrix = ColorMatrix().apply { setToSaturation(if(should_gray_out) 0f else 1f) } // 0f = greyscale
-    val paint = ColorFilter.colorMatrix(matrix)
-    
-    var tmp_ship_offset by remember{mutableStateOf(ship.prev_offset)}
-    var tmp_orientation by remember { mutableStateOf(ship.tmp_orientation) }
-    val localdensity=LocalDensity.current
-    var got_org_coord = remember{false}
-    var xidx = remember { 0 }
-    var yidx = remember { 0 }
-    var ship_coords: LayoutCoordinates?=remember{ null }
-    LaunchedEffect(for_player.reset_ships_to_prev.value) {
-        if(ship.attacked_count.value==0){
-            tmp_ship_offset=ship.prev_offset
-            tmp_orientation=ship.prev_orientation
-            Log.d("general","reset ships executed2:$tmp_ship_offset")
-            ship.tmp_offset=ship.prev_offset
-        }
-    }
-    LaunchedEffect(ship.attacked_count.value) {
-        should_gray_out=(ship.grid_positions.isEmpty() && for_player.mode.value!= Mode.DEPLOYING && opp_player.mode.value!=Mode.DEPLOYING)
-    }
-    if(ship.isvisible || should_gray_out) {
-        Box(
-            modifier = Modifier
-                .size(orgsizex, orgsizey)
-                .graphicsLayer {
-                    translationX = tmp_ship_offset.x
-                    translationY = tmp_ship_offset.y
-                    rotationZ = if(tmp_orientation== Orientation.VERTICAL) 90f else 0f
-                }
-                .onGloballyPositioned{coord->
-                    if(for_player.grid_layout_coords!=null) {
-                        ship_coords=coord
-                        if(got_org_coord==false){
-                            ship.org_pos_in_screen = coord.localToWindow(Offset.Zero)
-                            //TODO error comin here layouts are not a part of same hierarchy
-                            ship.org_relative_grid_pos = for_player.grid_layout_coords!!.localPositionOf(coord, Offset.Zero)
-                            got_org_coord=true
-                        }
-                    }
-                }
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragStart = {
-                            if(ship.attacked_count.value==0){
-                                Log.d("general","dragstart:${gameViewModel.cur_player.reset_ships_to_prev}")
-                            }
-                        },
-                        onDrag = { change, dragAmount ->
-                            if(ship.attacked_count.value==0) {
-                                val corrected = if (tmp_orientation == Orientation.VERTICAL) {
-                                    Offset(-dragAmount.y, dragAmount.x)
-                                } else {
-                                    dragAmount
-                                }
-                                tmp_ship_offset += corrected
-
-                                change.consume()
-                            }
-                        },
-                        onDragEnd = {
-                            if(for_player.grid_layout_coords!=null && ship.attacked_count.value==0) {
-                                var rel_ship_coords=Offset.Zero
-                                ship.tmp_offset=tmp_ship_offset
-                                if(tmp_orientation== Orientation.VERTICAL)
-                                    rel_ship_coords = for_player.grid_layout_coords!!.localPositionOf(ship_coords!!, Offset(0f,ship_coords.size.height.toFloat()))
-                                else
-                                    rel_ship_coords = for_player.grid_layout_coords!!.localPositionOf(ship_coords!!, Offset.Zero)
-                                xidx = (rel_ship_coords.x / with(localdensity) { (CELL_SIZE + GRID_PADDING).toPx() }).roundToInt()
-                                yidx = (rel_ship_coords.y / with(localdensity) { (CELL_SIZE + GRID_PADDING).toPx() }).roundToInt()
-                                //TODO change this to snap
-                                ship.tmp_ship_grid_start_idx= IntOffset(yidx,xidx) }
-                                Log.d("general", "xidx:$xidx,yidx:$yidx")
-                            /*
-                            if (IsValidShip(
-                                        start_idx = IntOffset(xidx, yidx),
-                                        for_player = for_player,
-                                        ship = ship
-                                    )
-                                ) {
-                                    //Log.d("general","yes valid ship,matching: $idx")
-                                    if (tmp_orientation == Orientation.HORIZONTAL) {
-                                        tmp_ship_offset =
-                                            for_player.grid[yidx][xidx].offset - ship.org_relative_grid_pos
-                                        Log.d(
-                                            "general",
-                                            "orientation of ship is horizontal,tmp_ship_offset:$tmp_ship_offset"
-                                        )
-                                    } else {
-                                        tmp_ship_offset = for_player.grid[yidx][xidx].offset - ship.org_relative_grid_pos-Offset(with(localdensity) { (CELL_SIZE + GRID_PADDING).toPx() },-with(localdensity) { (CELL_SIZE + GRID_PADDING).toPx() })
-                                        Log.d(
-                                            "general",
-                                            "orientation of ship is vertical,tmp_ship_offset:$tmp_ship_offset"
-                                        )
-                                    }
-                                    //ship.tmp_offset=tmp_ship_offset
-                                } else {
-                                    tmp_ship_offset = ship.tmp_offset
-                                    Log.d("general", "no invalid ship")
-                                }
-                                Log.d("general", "${ship.shipType} moved to $tmp_ship_offset")
-                                ship.tmp_offset = tmp_ship_offset
-                                Log.d(
-                                    "general",
-                                    "ship:${ship.shipType},tmp_top_left_screen_position:${ship.tmp_offset}"
-                                )
-                                */
-                                    },
-                    )
-                }
-                .clickable(
-                    enabled = ship.attacked_count.value==0,
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }) {
-                    tmp_orientation=if(tmp_orientation== Orientation.VERTICAL) Orientation.HORIZONTAL else Orientation.VERTICAL
-                    ship.tmp_orientation=tmp_orientation
-                    Log.d("general","clicked:$ship_coords")
-                }
-                .then(modifier)
-        ) {
-            Image(
-                painter = painterResource(ship.shipType.img_path),
-                contentDescription = null,
-                contentScale = ContentScale.FillBounds,
-                colorFilter = paint
-            )
-        }
-    }
-}
 
 @Composable
 fun BottomBar(for_player: Player,gameViewModel: GameViewModel, remaining_attacks:Int=3,modifier: Modifier=Modifier){
@@ -483,7 +396,12 @@ fun BottomBar(for_player: Player,gameViewModel: GameViewModel, remaining_attacks
             fontFamily = FontFamily(Font(R.font.bottombar)),
         )
         Switch(
-            checked = (for_player.mode.value==Mode.ATTACKING),
+            checked = (for_player.mode.value==Mode.DEPLOYING || for_player.mode.value==Mode.FORTIFYING),
+            enabled = (for_player.mode.value==Mode.FORTIFYING || for_player.mode.value==Mode.ATTACKING),
+            colors= SwitchDefaults.colors(
+                checkedTrackColor = Color.DarkGray,
+                uncheckedTrackColor = Color.LightGray,
+            ),
             onCheckedChange = {
                 if(for_player.remaining_attacks.value==3) {
                     if (for_player.mode.value == Mode.ATTACKING) {
@@ -494,7 +412,8 @@ fun BottomBar(for_player: Player,gameViewModel: GameViewModel, remaining_attacks
                     }
                 }
             },
-            modifier = Modifier.align(Alignment.CenterEnd)
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
         )
     }
 }
@@ -523,30 +442,81 @@ fun DrawCircles(totalcount:Int=3,remaining_attacks: Int,circlesize:Dp,modifier: 
 @Composable
 fun WinDialog(gameViewModel: GameViewModel, navController: NavController,ondismiss:()->Unit ,modifier:Modifier) {
     val winner=if(gameViewModel.player1.iswinner.value) gameViewModel.player1 else gameViewModel.player2
-    Dialog(onDismissRequest = {})
+    val bg_color=Color(android.graphics.Color.parseColor("#00f0ff"))
+    Dialog(
+        onDismissRequest = {})
     {
-        Box(modifier=Modifier.background(color=Color.Cyan,shape= RoundedCornerShape(24.dp)).height(280.dp).width(280.dp).then(modifier)) {
-            Column(modifier=Modifier.align(Alignment.TopCenter)) {
-                Box(modifier = Modifier.background(color=Color.White,shape= RoundedCornerShape(24.dp)).fillMaxWidth().height(210.dp)) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally,modifier=Modifier.fillMaxSize().padding(top=8.dp,bottom=16.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .background(color = colorResource(R.color.light_gold))
-                                .padding(8.dp)
-                        ) {
-                            Text(
-                                text = winner.player.name.substring(0,winner.player.name.lastIndex) + " " + winner.player.name.last() + " Wins",
-                                textAlign = TextAlign.Center,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorResource(R.color.dark_gold)
-                            )
+        Box(
+            modifier=Modifier
+                .background(color=Color.Cyan,shape= RoundedCornerShape(24.dp))
+                .height(310.dp)
+                .width(330.dp)
+                .drawBehind{
+                    val size=this.size
+                    drawContext.canvas.nativeCanvas.apply {
+                        drawRoundRect(
+                            0f,0f,size.width,size.height,24.dp.toPx(),24.dp.toPx(),
+                            Paint().apply {
+                                color=bg_color.toArgb()
+                                setShadowLayer(
+                                    30.dp.toPx(),
+                                    0f,0f,
+                                    Color.White.copy(alpha = 0.5f).toArgb()
+                                )
                             }
-                        Row(horizontalArrangement = Arrangement.Center) {
+                        )
+                    }
+                }
+                .then(modifier)) {
+            Column(modifier=Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
+                Box(modifier = Modifier
+                    .background(color=Color.White,shape= RoundedCornerShape(24.dp))
+                    .fillMaxWidth()
+                    .height(230.dp)
+                    ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier=Modifier
+                            .fillMaxSize()
+                            .padding(top= dimensionResource(R.dimen.large_padding)*2)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Box(
+                                modifier= Modifier
+                                    .height(40.dp)
+                                    .background(color=colorResource(R.color.med_gold))
+                                    .weight(1f)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .background(color = colorResource(R.color.light_gold))
+                            ) {
+                                Text(
+                                    text = winner.player.name.substring(
+                                        0,
+                                        winner.player.name.lastIndex
+                                    ) + " " + winner.player.name.last() + " WINS",
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorResource(R.color.dark_gold),
+                                    modifier=Modifier
+                                        .align(Alignment.Center)
+                                        .padding(12.dp)
+                                )
+                            }
+                            Box(
+                                modifier= Modifier
+                                    .height(40.dp)
+                                    .background(color=colorResource(R.color.med_gold))
+                                    .weight(1f)
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.Center,modifier=Modifier.fillMaxWidth()) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = "HIGHSCORE",
-                                    fontSize = 16.sp,
+                                    fontSize = 20.sp,
                                     textAlign = TextAlign.Center,
                                     fontWeight = FontWeight.Bold,
                                     color = colorResource(R.color.light_gold)
@@ -558,22 +528,20 @@ fun WinDialog(gameViewModel: GameViewModel, navController: NavController,ondismi
                                     fontWeight = FontWeight.Bold,
                                     color = Color.Black,
                                     modifier = Modifier
-                                        .padding(top = 8.dp, bottom = 4.dp)
                                 )
                                 Text(
                                     text = "POINTS",
-                                    fontSize = 16.sp,
+                                    fontSize = 20.sp,
                                     color = Color.Black,
                                     fontWeight = FontWeight.Bold,
-
                                     textAlign = TextAlign.Center
                                 )
                             }
-                            Spacer(modifier=Modifier.width(40.dp))
+                            Spacer(modifier=Modifier.width(60.dp))
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = "SCORE",
-                                    fontSize = 16.sp,
+                                    fontSize = 20.sp,
                                     textAlign = TextAlign.Center,
                                     fontWeight = FontWeight.Bold,
 
@@ -587,11 +555,10 @@ fun WinDialog(gameViewModel: GameViewModel, navController: NavController,ondismi
                                     fontWeight = FontWeight.Bold,
 
                                     modifier = Modifier
-                                        .padding(top = 8.dp, bottom = 4.dp)
                                 )
                                 Text(
                                     text = "POINTS",
-                                    fontSize = 16.sp,
+                                    fontSize = 20.sp,
                                     color = Color.Black,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center
@@ -601,7 +568,13 @@ fun WinDialog(gameViewModel: GameViewModel, navController: NavController,ondismi
                     }
                 }
             }
-            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,modifier=Modifier.padding(8.dp).align(Alignment.BottomCenter).padding(top=4.dp)){
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier=Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom=dimensionResource(R.dimen.large_padding)+4.dp)){
                 Button(
                     onClick = {
                         ondismiss()
@@ -610,12 +583,12 @@ fun WinDialog(gameViewModel: GameViewModel, navController: NavController,ondismi
                         navController.navigate(screens.GAME.name)
                     },
                     shape = RoundedCornerShape(8.dp),
-                    elevation = ButtonDefaults.buttonElevation(16.dp),
-                    colors=ButtonDefaults.buttonColors(containerColor = colorResource(R.color.little_black)
-                )) {
+                    contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.med_padding)),
+                    elevation = ButtonDefaults.buttonElevation(4.dp),
+                    colors=ButtonDefaults.buttonColors(containerColor = colorResource(R.color.little_black))) {
                     Text(
                         text="PLAY AGAIN",
-                        //fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
                         color=Color.White
                     )
             }
@@ -628,12 +601,12 @@ fun WinDialog(gameViewModel: GameViewModel, navController: NavController,ondismi
                 },
                 shape = RoundedCornerShape(8.dp),
                 colors=ButtonDefaults.buttonColors(containerColor = Color.White),
-                elevation = ButtonDefaults.buttonElevation(16.dp)
+                elevation = ButtonDefaults.buttonElevation(4.dp)
             ) {
                 Text(
                     text="HOME",
-                    //fontSize = 16.sp,
-                    color=Color.Black
+                    color=Color.Black,
+                    fontWeight = FontWeight.Bold,
                 )
             }
                 }
