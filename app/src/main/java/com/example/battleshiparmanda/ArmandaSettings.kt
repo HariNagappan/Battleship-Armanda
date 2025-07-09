@@ -1,8 +1,10 @@
 package com.example.battleshiparmanda
 
+import android.R.attr.top
 import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -43,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.fontResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -57,16 +62,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 @Composable
-fun SettingsUI(navigateUp:() ->Unit) {
-    val context= LocalContext.current
-    val sharedPref = context.getSharedPreferences(stringResource(R.string.shared_pref_filename), Context.MODE_PRIVATE)
-    val json = sharedPref.getString(stringResource(R.string.player_history_key), "")
-    val type = object : TypeToken<MutableList<game_history_data>>() {}.type
-
-    var history_list: List<game_history_data> = emptyList()
-    if(json!="") {
-        history_list = Gson().fromJson(json, type)
-    }
+fun SettingsUI(gameViewModel: GameViewModel, navigateUp:() ->Unit) {
     var show_history_dialog by remember{ mutableStateOf(false) }
     Box(modifier=Modifier
         .background(colorResource(R.color.light_gray)))
@@ -88,11 +84,16 @@ fun SettingsUI(navigateUp:() ->Unit) {
                         .align(Alignment.Center)
                 )
                 IconButton(onClick = navigateUp) {
-                    Image(
-                        painter = painterResource(R.drawable.back),
+                    Icon(
+                        //painter = painterResource(R.drawable.back),
+                        imageVector = Icons.Default.ArrowBack,
                         contentDescription = null,
+                        tint=colorResource(R.color.white),
                         modifier = Modifier
                             .align(Alignment.TopStart)
+                            .border(width = 1.dp,color=colorResource(R.color.white),shape=CircleShape)
+                            .padding(4.dp)
+                            .size(40.dp)
                     )
                 }
             }
@@ -114,8 +115,8 @@ fun SettingsUI(navigateUp:() ->Unit) {
                 )
             }
             if(show_history_dialog){
-                history_dialog(
-                    history_list = history_list
+                HistoryDialog(
+                    history_list = gameViewModel.history_list
                     ,onDismiss = {
                     show_history_dialog=false
                 })
@@ -124,7 +125,7 @@ fun SettingsUI(navigateUp:() ->Unit) {
     }
 }
 @Composable
-fun history_dialog(history_list:List<game_history_data>,onDismiss:() -> Unit){
+fun HistoryDialog(history_list:List<GameHistoryData>, onDismiss:() -> Unit){
     Dialog(
         onDismissRequest = {onDismiss()}
     ) {
@@ -181,7 +182,7 @@ fun history_dialog(history_list:List<game_history_data>,onDismiss:() -> Unit){
                     ) {
                         if (history_list.size > 0) {
                             for (i in 0 until history_list.size) {
-                                history_card(
+                                HistoryCard(
                                     gameHistoryData = history_list[history_list.size - i - 1],
                                     curgame = history_list.size - i
                                 )
@@ -194,7 +195,7 @@ fun history_dialog(history_list:List<game_history_data>,onDismiss:() -> Unit){
     }
 }
 @Composable
-fun history_card(gameHistoryData: game_history_data,curgame:Int){
+fun HistoryCard(gameHistoryData: GameHistoryData,curgame:Int){
     val isplayer1winner=gameHistoryData.winner==Players.PLAYER1
     Card(
        elevation =CardDefaults.cardElevation(20.dp),
@@ -202,13 +203,14 @@ fun history_card(gameHistoryData: game_history_data,curgame:Int){
         modifier=Modifier
             .padding(4.dp)
             .fillMaxWidth()
-            .height(150.dp)
 
     ){
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
-            modifier=Modifier.fillMaxSize()
+            modifier=Modifier
+                .fillMaxWidth()
+                .padding(top=dimensionResource(R.dimen.med_padding), bottom = dimensionResource(R.dimen.med_padding))
         ) {
             Text(
                 text="Game $curgame",

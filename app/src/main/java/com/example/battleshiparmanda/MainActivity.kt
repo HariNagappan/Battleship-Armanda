@@ -57,6 +57,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role.Companion.Image
@@ -112,16 +113,18 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable
-fun StartGame(navController:NavHostController=rememberNavController()){
+fun StartGame(gameViewModel: GameViewModel=viewModel(), navController:NavHostController=rememberNavController()){
     NavHost(navController=navController, startDestination = screens.HOME.name,modifier=Modifier.fillMaxSize().statusBarsPadding()){
         composable(screens.HOME.name){
+            gameViewModel.GetPlayersHistoryAndSetHighScore(context = LocalContext.current)
             StartScreen(settingsclick = {navController.navigate(screens.SETTINGS.name)}, PlayClick = {navController.navigate(screens.GAME.name)})
         }
         composable(screens.SETTINGS.name) {
-            SettingsUI(navigateUp = {navController.navigateUp()})
+            SettingsUI(gameViewModel=gameViewModel, navigateUp = {navController.navigateUp()})
         }
         composable(screens.GAME.name){
-            maingame(navController=navController)
+            gameViewModel.ResetGame()
+            MainGame(gameViewModel=gameViewModel, navController=navController)
         }
     }
 }
@@ -263,7 +266,7 @@ fun HelpDialog(Heading:String,Body:String,onDismiss:() ->Unit){
         }
     }
 }
-fun get_player_high_score(player_name:Players,lst:MutableList<game_history_data>):Int{
+fun get_player_high_score(player_name:Players,lst:MutableList<GameHistoryData>):Int{
     var high=0
     for(i in lst){
         if(i.winner==player_name){

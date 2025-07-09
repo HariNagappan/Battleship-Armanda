@@ -1,5 +1,6 @@
 package com.example.battleshiparmanda
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,12 +21,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
@@ -33,28 +36,25 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-fun clearplayergrid(player:Player){
-    for(i in 0 until player.grid_size){
-        for(j in 0 until player.grid_size){
-            if(player.grid[i][j].cellState==CellState.EMPTY || (player.grid[i][j].cellState==CellState.SHIP)){
-                player.grid[i][j].cellState=CellState.EMPTY
-            }
-        }
-    }
-}
 @Composable
-fun fortify(heading:String,description:String,player1_turn: Boolean,isdeploy:Boolean,ondelete:() ->Unit,onsave:() ->Unit,modifier: Modifier = Modifier){
+fun Fortify(gameViewModel: GameViewModel, heading:String,description:String,onFailure:()->Unit,modifier: Modifier = Modifier){
     Box(
-        modifier= Modifier.fillMaxWidth()
+        modifier= Modifier
+            .fillMaxWidth()
             .wrapContentHeight()
+            .graphicsLayer { rotationZ = if (gameViewModel.player1.iscurrentplayer) 0f else 180f }
+            .background(
+                colorResource(R.color.gray),
+                shape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
+            )
             .then(modifier)
-            .graphicsLayer { rotationZ =if(player1_turn) 0f else 180f}
-            .background(colorResource(R.color.gray),shape= RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)),
-    ){
+        ,
+        ){
         Column(horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
-            modifier= Modifier.fillMaxWidth().padding(top=8.dp,bottom=8.dp)){
+            modifier= Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 8.dp)){
             Text(
                 text=heading,
                 fontSize = 60.sp,
@@ -71,11 +71,24 @@ fun fortify(heading:String,description:String,player1_turn: Boolean,isdeploy:Boo
                 modifier= Modifier.align(Alignment.CenterHorizontally)
             )
             Spacer(modifier= Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().align(
-                Alignment.CenterHorizontally)) {
+            Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
+                .fillMaxWidth()
+                .align(
+                    Alignment.CenterHorizontally
+                )) {
                 Button(
                     onClick = {
-                        onsave()
+                        if(HasValidShips(player = gameViewModel.cur_player)) {
+                            gameViewModel.DeRegisterOldShips(player=gameViewModel.cur_player)
+                            gameViewModel.CopyTmpToOrignalCoordinates(player=gameViewModel.cur_player)
+                            gameViewModel.RegisterShips(player=gameViewModel.cur_player)
+                            gameViewModel.ChangePlayerTurn()
+                        }
+                        else{
+                            onFailure()
+                        }
+                        Log.d("general","----------------${gameViewModel.cur_player.player}-------------------")
+                        PrintGrid(player=gameViewModel.cur_player)
                     },
                     shape = RoundedCornerShape(16.dp),
                     colors= ButtonDefaults.buttonColors(
@@ -90,16 +103,17 @@ fun fortify(heading:String,description:String,player1_turn: Boolean,isdeploy:Boo
                         color= Color.White,
                     )
                 }
-                if(isdeploy){
+                if(gameViewModel.cur_player.mode.value== Mode.DEPLOYING){
                     //place the auto button
                     Spacer(modifier= Modifier.width(30.dp))
                     Button(
                         onClick = {
-
+                            //TODO Do Auto Feature
+                            val res=GetRandomGridPositions(for_player = gameViewModel.cur_player)
+                            Log.d("general","map of all:$res")
                         },
                         shape = RoundedCornerShape(16.dp),
-                        colors= ButtonDefaults.buttonColors(
-                            containerColor = colorResource(R.color.purple)
+                        colors= ButtonDefaults.buttonColors(containerColor = colorResource(R.color.purple)
                         )
                     ){
                         Text(
@@ -108,21 +122,25 @@ fun fortify(heading:String,description:String,player1_turn: Boolean,isdeploy:Boo
                             fontFamily = FontFamily(Font(R.font.fortifydeploy)),
                             textAlign = TextAlign.Center,
                             color= Color.White,
-
                             )
                     }
                 }
             }
             Spacer(modifier= Modifier.height(13.dp))
-            Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().align(
-                Alignment.CenterHorizontally)) {
+            Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
+                .fillMaxWidth()
+                .align(
+                    Alignment.CenterHorizontally
+                )) {
                 Image(
                     painter= painterResource(R.drawable.dustbin),
                     contentDescription = null,
                     modifier= Modifier
                         .size(60.dp)
                         .clip(CircleShape)
-                        .clickable { ondelete() }
+                        .clickable {
+                            gameViewModel.ResetShipsToPreviousPosition(player=gameViewModel.cur_player)
+                        }
                     ,
                     contentScale = ContentScale.Crop
                 )
@@ -133,7 +151,19 @@ fun fortify(heading:String,description:String,player1_turn: Boolean,isdeploy:Boo
                     modifier= Modifier
                         .size(60.dp)
                         .clip(CircleShape)
-                        .clickable { onsave() },
+                        .clickable {
+                            if(HasValidShips(player = gameViewModel.cur_player)) {
+                                gameViewModel.DeRegisterOldShips(player=gameViewModel.cur_player)
+                                gameViewModel.CopyTmpToOrignalCoordinates(player=gameViewModel.cur_player)
+                                gameViewModel.RegisterShips(player=gameViewModel.cur_player)
+                                gameViewModel.ChangePlayerTurn()
+                            }
+                            else{
+                                onFailure()
+                            }
+                            Log.d("general","----------------${gameViewModel.cur_player.player}-------------------")
+                            PrintGrid(player=gameViewModel.cur_player)
+                        },
                     contentScale = ContentScale.Crop
                 )
             }
