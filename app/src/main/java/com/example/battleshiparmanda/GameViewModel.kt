@@ -30,9 +30,9 @@ class GameViewModel: ViewModel() {
         grid =  MakeGrid(GRID_SIZE),
         ships = mutableListOf(
             Ship(shipType= ShipType.Ship1),
-            Ship(shipType= ShipType.Ship2),
             Ship(shipType= ShipType.Ship3),
-            Ship(shipType= ShipType.Ship3_1)),
+            Ship(shipType= ShipType.Ship3_1),
+            Ship(shipType= ShipType.Ship2)),
         iscurrentplayer = true,
         remaining_attacks = mutableStateOf(3),
         cur_score = 0,
@@ -41,9 +41,9 @@ class GameViewModel: ViewModel() {
         grid =  MakeGrid(GRID_SIZE),
         ships = mutableListOf(
             Ship(shipType= ShipType.Ship1),
-            Ship(shipType= ShipType.Ship2),
             Ship(shipType= ShipType.Ship3),
-            Ship(shipType= ShipType.Ship3_1)),
+            Ship(shipType= ShipType.Ship3_1),
+            Ship(shipType= ShipType.Ship2)),
         iscurrentplayer = false,
         remaining_attacks = mutableStateOf(3),
         cur_score = 0,
@@ -59,8 +59,8 @@ class GameViewModel: ViewModel() {
         if(json!=""){
             history_list= Gson().fromJson(json, type)
         }
-        player1.high_score= get_player_high_score(Players.PLAYER1,history_list)
-        player2.high_score= get_player_high_score(Players.PLAYER2,history_list)
+        player1.high_score= GetPlayerHighScore(Players.PLAYER1,history_list)
+        player2.high_score= GetPlayerHighScore(Players.PLAYER2,history_list)
     }
     fun ChangePlayerTurn(){
         if(player1.mode.value==Mode.DEPLOYING){
@@ -160,15 +160,20 @@ class GameViewModel: ViewModel() {
         return player1
     }
     fun RegisterShips(player: Player){
-        player.ships.forEach { ship->
-            val grid_positions=GetGridPositionsFromStartIndex(start_position = ship.tmp_ship_grid_start_idx,ship=ship)
-            for(pos in grid_positions){
-                player.grid[pos.x][pos.y].cellState.value= CellState.SHIP
+        player.ships.forEach { ship ->
+            if (ship.attacked_count.value == 0) {
+                val grid_positions = GetGridPositionsFromStartIndex(
+                    start_position = ship.tmp_ship_grid_start_idx,
+                    ship = ship
+                )
+                for (pos in grid_positions) {
+                    player.grid[pos.x][pos.y].cellState.value = CellState.SHIP
+                }
+                ship.grid_positions = grid_positions
             }
-            ship.grid_positions=grid_positions
         }
     }
-    fun DeRegisterOldShips(player: Player){
+    fun EmptyOccupiedGridCells(player: Player){
         player.ships.forEach {ship->
             if(ship.attacked_count.value==0) {
                 for (pos in ship.grid_positions) {

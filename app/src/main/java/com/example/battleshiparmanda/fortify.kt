@@ -82,7 +82,7 @@ fun Fortify(gameViewModel: GameViewModel, heading:String,description:String,onFa
                 Button(
                     onClick = {
                         if(HasValidShips(player = gameViewModel.cur_player)) {
-                            gameViewModel.DeRegisterOldShips(player=gameViewModel.cur_player)
+                            gameViewModel.EmptyOccupiedGridCells(player=gameViewModel.cur_player)
                             gameViewModel.CopyTmpToOrignalCoordinates(player=gameViewModel.cur_player)
                             gameViewModel.RegisterShips(player=gameViewModel.cur_player)
                             gameViewModel.ChangePlayerTurn()
@@ -157,7 +157,8 @@ fun Fortify(gameViewModel: GameViewModel, heading:String,description:String,onFa
                         .clip(CircleShape)
                         .clickable {
                             if(HasValidShips(player = gameViewModel.cur_player)) {
-                                gameViewModel.DeRegisterOldShips(player=gameViewModel.cur_player)
+                                PrintAttackedCountShips(for_player = gameViewModel.cur_player)
+                                gameViewModel.EmptyOccupiedGridCells(player=gameViewModel.cur_player)
                                 gameViewModel.CopyTmpToOrignalCoordinates(player=gameViewModel.cur_player)
                                 gameViewModel.RegisterShips(player=gameViewModel.cur_player)
                                 gameViewModel.ChangePlayerTurn()
@@ -177,4 +178,10 @@ fun Fortify(gameViewModel: GameViewModel, heading:String,description:String,onFa
 }
 fun IntOffset.toFloat(): Offset{
     return Offset(this.x.toFloat(),this.y.toFloat())
+}
+fun PrintAttackedCountShips(for_player: Player){
+    Log.d("general","player:${for_player.player.name}, ships attacked count following:->")
+    for_player.ships.forEach {ship->
+        Log.d("general","${ship.shipType}:${ship.attacked_count}")
+    }
 }

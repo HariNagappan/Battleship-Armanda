@@ -24,7 +24,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -72,7 +74,7 @@ fun SettingsUI(gameViewModel: GameViewModel, navigateUp:() ->Unit) {
                 .fillMaxSize())
         {
             Box(
-                modifier = Modifier.padding(8.dp).fillMaxWidth()
+                modifier = Modifier.padding(top=dimensionResource(R.dimen.from_top_padding)).fillMaxWidth()
             ) {
                 Text(
                     text = stringResource(R.string.settings),
@@ -82,6 +84,7 @@ fun SettingsUI(gameViewModel: GameViewModel, navigateUp:() ->Unit) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .align(Alignment.Center)
+
                 )
                 IconButton(onClick = navigateUp) {
                     Icon(
@@ -97,7 +100,8 @@ fun SettingsUI(gameViewModel: GameViewModel, navigateUp:() ->Unit) {
                     )
                 }
             }
-            Box(
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier=Modifier
                     .fillMaxWidth()
                     .padding(4.dp)
@@ -105,13 +109,21 @@ fun SettingsUI(gameViewModel: GameViewModel, navigateUp:() ->Unit) {
                         show_history_dialog=true
                     }
             ){
+                Spacer(modifier=Modifier.weight(1f))
                 Text(
                     text="Game History",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     color=Color.White,
-                    modifier=Modifier.align(Alignment.Center)
+                    modifier=Modifier.padding(dimensionResource(R.dimen.med_padding))
+
+                )
+                Spacer(modifier=Modifier.weight(1f))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint=colorResource(R.color.white),
                 )
             }
             if(show_history_dialog){
@@ -131,8 +143,7 @@ fun HistoryDialog(history_list:List<GameHistoryData>, onDismiss:() -> Unit){
     ) {
         Card(modifier = Modifier
             .fillMaxWidth()
-            .height(500.dp)
-            .padding(5.dp),
+            .height(500.dp),
             colors = CardDefaults.cardColors(containerColor = colorResource(R.color.light_gray)),
             shape = RoundedCornerShape(16.dp)
         ) {
@@ -156,11 +167,10 @@ fun HistoryDialog(history_list:List<GameHistoryData>, onDismiss:() -> Unit){
                             textAlign = TextAlign.Center,
                             fontSize = 20.sp,
                             fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
                             color = Color.White,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .align(Alignment.Center)
-
                         )
                         Image(
                             painter = painterResource(R.drawable.close),
@@ -178,7 +188,7 @@ fun HistoryDialog(history_list:List<GameHistoryData>, onDismiss:() -> Unit){
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                            .padding(8.dp)
+                            .padding(2.dp)
                     ) {
                         if (history_list.size > 0) {
                             for (i in 0 until history_list.size) {
@@ -201,7 +211,7 @@ fun HistoryCard(gameHistoryData: GameHistoryData,curgame:Int){
        elevation =CardDefaults.cardElevation(20.dp),
         colors = CardDefaults.cardColors(containerColor = colorResource(R.color.little_black)),
         modifier=Modifier
-            .padding(4.dp)
+            .padding(8.dp)
             .fillMaxWidth()
 
     ){

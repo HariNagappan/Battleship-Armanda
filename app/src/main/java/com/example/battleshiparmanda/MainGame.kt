@@ -25,6 +25,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
@@ -208,14 +209,14 @@ fun MainGame(gameViewModel: GameViewModel, navController:NavController){
 }
 
 @Composable
-fun MakeUI(gameViewModel: GameViewModel,navController: NavController){
+fun MakeUI(gameViewModel: GameViewModel,navController: NavController,modifier:Modifier=Modifier){
     val localdensity= LocalDensity.current
     val p2_background by animateColorAsState(
-        targetValue = if (gameViewModel.player1.iscurrentplayer) colorResource(R.color.turqoise) else colorResource(R.color.little_black),
+        targetValue = if((gameViewModel.player2.iscurrentplayer && gameViewModel.player2.mode.value!=Mode.ATTACKING) || (gameViewModel.player1.iscurrentplayer && gameViewModel.player1.mode.value==Mode.ATTACKING)) colorResource(R.color.turqoise) else  colorResource(R.color.little_black),
         animationSpec = tween(durationMillis = 1000)
     )
     val p1_background by animateColorAsState(
-        targetValue = if (gameViewModel.player2.iscurrentplayer) colorResource(R.color.turqoise) else colorResource(R.color.little_black),
+        targetValue = if((gameViewModel.player1.iscurrentplayer && gameViewModel.player1.mode.value!=Mode.ATTACKING) || (gameViewModel.player2.iscurrentplayer && gameViewModel.player2.mode.value==Mode.ATTACKING)) colorResource(R.color.turqoise) else  colorResource(R.color.little_black) ,//if (gameViewModel.player2.iscurrentplayer) colorResource(R.color.turqoise) else colorResource(R.color.little_black),
         animationSpec = tween(durationMillis = 1000)
     )
     val yoffset by animateDpAsState(targetValue=if(gameViewModel.player1.iscurrentplayer) -145.dp else 145.dp, animationSpec = tween(durationMillis = 500,easing= LinearEasing))
@@ -266,8 +267,8 @@ fun MakeUI(gameViewModel: GameViewModel,navController: NavController){
         ) {
             AnimatedVisibility(
                 visible = (gameViewModel.cur_player.mode.value == Mode.FORTIFYING || gameViewModel.cur_player.mode.value == Mode.DEPLOYING),
-                enter = slideInVertically(animationSpec = tween(durationMillis = 1000)){fullHeight -> fullHeight } + fadeIn(animationSpec = tween(durationMillis = 1000)) ,
-                exit = slideOutVertically(animationSpec = tween(durationMillis = 1000)){fullHeight -> fullHeight } + fadeOut(animationSpec = tween(durationMillis = 1000)) ,
+                enter = slideInVertically(animationSpec = tween(durationMillis = 1000)){fullHeight -> fullHeight*(if(gameViewModel.player1.iscurrentplayer) 1 else -1) } + fadeIn(animationSpec = tween(durationMillis = 1000)) ,
+                exit = slideOutVertically(animationSpec = tween(durationMillis = 1000)){fullHeight -> fullHeight* (if(gameViewModel.player1.iscurrentplayer) 1 else -1) } + fadeOut(animationSpec = tween(durationMillis = 1000)) ,
                 modifier = Modifier
                     .align(Alignment.Center)
             ) {
@@ -287,7 +288,7 @@ fun MakeUI(gameViewModel: GameViewModel,navController: NavController){
             val curplayer=if(gameViewModel.player1.iscurrentplayer) gameViewModel.player1 else gameViewModel.player2
             //printGrid(curplayer)
             curplayer.ships.forEach {
-                //Log.d("allships","player:${curplayer.player.name},${it.ship}:${it.positions_in_grid}")
+                Log.d("allships","player:${curplayer.player.name}:${it.grid_positions}")
             }
             AlertDialog(
                 title = {
@@ -321,17 +322,25 @@ fun PlayerArea(gameViewModel: GameViewModel, for_player: Player, torotate:Boolea
         .fillMaxSize()
         .graphicsLayer { rotationZ= if(torotate) 180f else 0f }
         ){
+
         Box(modifier=Modifier.wrapContentSize().zIndex(3f)){
-            DummyDock(
-                for_player=for_player,
-                gameViewModel=gameViewModel
-            )
+            AnimatedVisibility(
+                visible= !((for_player.iscurrentplayer) && for_player.mode.value!=Mode.ATTACKING),
+                enter=fadeIn(animationSpec = tween(durationMillis = 1000)),
+                exit=fadeOut(animationSpec = tween(durationMillis = 1000))
+                ) {
+                DummyDock(
+                    for_player = for_player,
+                    gameViewModel = gameViewModel
+                )
+            }
             for_player.ships.forEach {ship->
                 ship.isvisible=(for_player.iscurrentplayer) && for_player.mode.value!=Mode.ATTACKING
             }
             ShipDock(
                 for_player=for_player,
-                gameViewModel=gameViewModel)
+                gameViewModel=gameViewModel
+            )
         }
         Box(
             modifier=Modifier.align(Alignment.Center).zIndex(3f),
@@ -389,7 +398,7 @@ fun BottomBar(for_player: Player,gameViewModel: GameViewModel, remaining_attacks
         )
         Text(
             text =for_player.mode.value.name.toString().substring(0,for_player.mode.value.name.toString().length -3) ,
-            fontSize = 28.sp,
+            fontSize = 32.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.Center),
             color = if (for_player.mode.value==Mode.ATTACKING) Color.White else Color.Black,
@@ -400,7 +409,9 @@ fun BottomBar(for_player: Player,gameViewModel: GameViewModel, remaining_attacks
             enabled = (for_player.mode.value==Mode.FORTIFYING || for_player.mode.value==Mode.ATTACKING),
             colors= SwitchDefaults.colors(
                 checkedTrackColor = Color.DarkGray,
-                uncheckedTrackColor = Color.LightGray,
+                uncheckedTrackColor = Color.Black.copy(alpha=0.2f),
+                uncheckedThumbColor = Color.Transparent,
+                uncheckedBorderColor = Color.Transparent
             ),
             onCheckedChange = {
                 if(for_player.remaining_attacks.value==3) {
@@ -411,6 +422,12 @@ fun BottomBar(for_player: Player,gameViewModel: GameViewModel, remaining_attacks
                         gameViewModel.ResetShipsToPreviousPosition(player=for_player)
                     }
                 }
+            },
+            thumbContent = {
+                Image(
+                    painter=if(for_player.mode.value==Mode.DEPLOYING || for_player.mode.value==Mode.FORTIFYING) painterResource(R.drawable.switchon) else painterResource(R.drawable.switchoff),
+                    contentDescription = null
+                )
             },
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -461,7 +478,7 @@ fun WinDialog(gameViewModel: GameViewModel, navController: NavController,ondismi
                                 setShadowLayer(
                                     30.dp.toPx(),
                                     0f,0f,
-                                    Color.White.copy(alpha = 0.5f).toArgb()
+                                    Color.White.copy(alpha = 0.45f).toArgb()
                                 )
                             }
                         )
@@ -583,7 +600,7 @@ fun WinDialog(gameViewModel: GameViewModel, navController: NavController,ondismi
                         navController.navigate(screens.GAME.name)
                     },
                     shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.med_padding)),
+                    contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.med_padding)+4.dp),
                     elevation = ButtonDefaults.buttonElevation(4.dp),
                     colors=ButtonDefaults.buttonColors(containerColor = colorResource(R.color.little_black))) {
                     Text(
@@ -600,6 +617,8 @@ fun WinDialog(gameViewModel: GameViewModel, navController: NavController,ondismi
                     navController.navigateUp()
                 },
                 shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.med_padding)*3+8.dp),
+
                 colors=ButtonDefaults.buttonColors(containerColor = Color.White),
                 elevation = ButtonDefaults.buttonElevation(4.dp)
             ) {

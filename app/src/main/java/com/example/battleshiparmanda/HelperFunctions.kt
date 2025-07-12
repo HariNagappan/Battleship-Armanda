@@ -117,7 +117,6 @@ fun HasValidShips(player: Player):Boolean{
     return true
 }
 fun IsValidShip(start_idx: IntOffset,for_player: Player,ship: Ship,grid_indices: MutableList<IntOffset>): Boolean{
-    //TODO
     if(start_idx.x<0 || start_idx.y<0 || start_idx.x>=for_player.grid.size || start_idx.y>=for_player.grid.size){
         return false
     }

@@ -50,7 +50,7 @@ fun DummyShip(ship: Ship, for_player: Player,gameViewModel: GameViewModel, modif
     val paint = ColorFilter.colorMatrix(matrix)
     val orgsizex = CELL_SIZE * ship.shipType.size + 8.dp * (ship.shipType.size - 1)
     val orgsizey= CELL_SIZE
-    val aspect_ratio=0.7f
+    val aspect_ratio=0.6f
     LaunchedEffect(ship.attacked_count.value) {
         if(ship.attacked_count.value>0){
             should_gray_out=(ship.grid_positions.isEmpty() && for_player.mode.value!= Mode.DEPLOYING && opp_player.mode.value!=Mode.DEPLOYING)

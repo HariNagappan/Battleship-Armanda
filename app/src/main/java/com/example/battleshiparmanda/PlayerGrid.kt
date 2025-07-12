@@ -1,6 +1,8 @@
 package com.example.battleshiparmanda
 
 import android.util.Log
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,21 +56,20 @@ fun DrawGrid(gameViewModel: GameViewModel, for_player:Player,modifier:Modifier=M
                     modifier=Modifier.align(Alignment.CenterHorizontally)
                 ) {
                     for (col in 0 until for_player.grid.size) {
-                        val cell_background=colorResource(if(for_player.mode.value==Mode.ATTACKING) R.color.gray else R.color.very_light_gray).copy(alpha = if(for_player.grid[row][col].cellState.value==CellState.EMPTY || for_player.grid[row][col].cellState.value==CellState.SHIP) 1f else 0f)
+                        val cell_background= colorResource(if(for_player.mode.value==Mode.ATTACKING) R.color.gray else R.color.very_light_gray).copy(alpha = if(for_player.grid[row][col].cellState.value==CellState.EMPTY || for_player.grid[row][col].cellState.value==CellState.SHIP) 1f else 0f)
+                        val animatedcolor by animateColorAsState(targetValue = cell_background, animationSpec = tween(durationMillis = 1000), label = "colorAnimation" )
                         Surface(
                             onClick = {
                                 if (opp_player.iscurrentplayer && opp_player.mode.value==Mode.ATTACKING) {
                                     val cur_cell = IntOffset(row, col)
                                     if (for_player.grid[row][col].cellState.value == CellState.SHIP) {
                                         //attack hit
-
                                         for_player.health.value-= 1/7f
                                         for_player.grid[row][col].cellState.value = CellState.HIT
                                         for_player.ships.find { cur_cell in it.grid_positions }?.let { ship ->
                                                 ship.attacked_count.value +=1
                                             }
                                         opp_player.cur_score += HIT_SCORE
-
                                         for (ship in for_player.ships) {
                                             if (cur_cell in ship.grid_positions) {
                                                 ship.grid_positions.remove(cur_cell)
@@ -84,7 +86,7 @@ fun DrawGrid(gameViewModel: GameViewModel, for_player:Player,modifier:Modifier=M
                                     else if (for_player.grid[row][col].cellState.value == CellState.EMPTY) {
                                         //attack missed
                                         for_player.grid[row][col].cellState.value = CellState.MISS
-                                        opp_player.cur_score += if (for_player.cur_score >= abs(MISS_SCORE)) MISS_SCORE else 0
+                                        opp_player.cur_score += if (opp_player.cur_score >= abs(MISS_SCORE)) MISS_SCORE else 0
 
                                         if (opp_player.remaining_attacks.value== 1) {
                                             gameViewModel.ChangePlayerTurn()
@@ -96,7 +98,6 @@ fun DrawGrid(gameViewModel: GameViewModel, for_player:Player,modifier:Modifier=M
                                     }
                                     if (IsDefeated(for_player) && for_player.mode.value != Mode.DEPLOYING && opp_player.mode.value != Mode.DEPLOYING) {
                                         //Log.d("player_won","${player.player.name}")
-                                        //store new game into history
                                         PrintGrid(player = for_player)
                                         val winner_player = opp_player
                                         val loser_player = for_player
@@ -119,8 +120,7 @@ fun DrawGrid(gameViewModel: GameViewModel, for_player:Player,modifier:Modifier=M
                                     //Log.d("alphaplayersample","${player.grid[row][col].cellState==CellState.EMPTY || player.grid[row][col].cellState==CellState.SHIP}")
                                 }
                             },
-                            //change backgournd color of each cell to transperent if hit or miss
-                            color = cell_background,
+                            color = animatedcolor,
                             shape = RoundedCornerShape(3.dp),
                             modifier = Modifier
                                 .size(52.dp)

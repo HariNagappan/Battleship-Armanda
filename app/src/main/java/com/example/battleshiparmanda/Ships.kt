@@ -1,5 +1,6 @@
 package com.example.battleshiparmanda
 
+import android.graphics.Paint
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -28,6 +29,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextPainter.paint
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
@@ -35,16 +39,19 @@ import kotlin.math.roundToInt
 fun ShipDock(for_player: Player,gameViewModel: GameViewModel,modifier:Modifier=Modifier){
     //Row(modifier=Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     Box(modifier=Modifier.fillMaxWidth()){
-        for_player.ships.forEach { ship ->
-            MovableShip(
-                ship = ship,
-                gameViewModel=gameViewModel,
-                for_player = for_player,
-                cell_size = CELL_SIZE,
-                padding = 8.dp,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
+        //Row(modifier=Modifier.align(Alignment.Center)) {
+            //TODO Fix Row Bug
+            for_player.ships.forEach { ship ->
+                MovableShip(
+                    ship = ship,
+                    gameViewModel = gameViewModel,
+                    for_player = for_player,
+                    cell_size = CELL_SIZE,
+                    padding = 8.dp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+        //}
     }
 }
 
@@ -65,6 +72,7 @@ fun MovableShip(ship:Ship,for_player: Player,gameViewModel: GameViewModel,cell_s
     var xidx = remember { 0 }
     var yidx = remember { 0 }
     var ship_coords: LayoutCoordinates?=remember{ null }
+    val context = LocalContext.current
     LaunchedEffect(for_player.reset_ships_to_prev.value) {
         if(ship.attacked_count.value==0){
             tmp_ship_offset=ship.prev_offset
@@ -90,7 +98,6 @@ fun MovableShip(ship:Ship,for_player: Player,gameViewModel: GameViewModel,cell_s
                         ship_coords=coord
                         if(got_org_coord==false){
                             ship.org_pos_in_screen = coord.localToWindow(Offset.Zero)
-                            //TODO error comin here layouts are not a part of same hierarchy
                             ship.org_relative_grid_pos = for_player.grid_layout_coords!!.localPositionOf(coord, Offset.Zero)
                             got_org_coord=true
                         }
@@ -198,12 +205,18 @@ fun MovableShip(ship:Ship,for_player: Player,gameViewModel: GameViewModel,cell_s
                     )
                 }
                 .clickable(
-                    enabled = ship.attacked_count.value==0,
+                    //enabled = ship.attacked_count.value==0,
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }) {
-                    tmp_orientation=if(tmp_orientation== Orientation.VERTICAL) Orientation.HORIZONTAL else Orientation.VERTICAL
-                    ship.tmp_orientation=tmp_orientation
-                    Log.d("general","clicked:$ship_coords")
+                    if(ship.attacked_count.value==0) {
+                        tmp_orientation =
+                            if (tmp_orientation == Orientation.VERTICAL) Orientation.HORIZONTAL else Orientation.VERTICAL
+                        ship.tmp_orientation = tmp_orientation
+                        Log.d("general", "clicked:$ship_coords")
+                    }
+                    else{
+                        DoVibrate(context = context)
+                    }
                 }
                 .then(modifier)
         ) {
@@ -211,7 +224,8 @@ fun MovableShip(ship:Ship,for_player: Player,gameViewModel: GameViewModel,cell_s
                 painter = painterResource(ship.shipType.img_path),
                 contentDescription = null,
                 contentScale = ContentScale.FillBounds,
-                colorFilter = paint
+                colorFilter = paint,
+
             )
         }
     }

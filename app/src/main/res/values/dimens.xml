@@ -3,4 +3,5 @@
     <dimen name="med_padding">8.dp</dimen>
     <dimen name="large_padding">16.dp</dimen>
     <dimen name="small_padding">4.dp</dimen>
+    <dimen name="from_top_padding">20.dp</dimen>
 </resources>
